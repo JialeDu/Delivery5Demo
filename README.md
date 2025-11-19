@@ -31,3 +31,21 @@ Test Stage: CodeBuild runs unit and integration tests, followed by static analys
 Deploy Stage: AWS CodeDeploy deploys to a Staging Environment for initial validation. A Manual Approval Gate ensures human review before production release.
 Production Stage: Upon approval, CodeDeploy automatically rolls out to the Production Environment, integrating with Auto Scaling Groups and Lambda as needed.
 This workflow provides a secure, controlled, and automated deployment process with testing and approvals to ensure system reliability and quality.
+
+
+
+github-actions
+![action](https://github.com/user-attachments/assets/b3137467-9919-494a-90c0-4365060c7434)
+
+EC2
+![ec2](https://github.com/user-attachments/assets/9f40ae83-8143-412d-b4dd-f58647cea5e9)
+
+IAM
+![IAM](https://github.com/user-attachments/assets/fbfc2563-2b25-4b24-a487-e1c251e344ba)
+
+S3
+![S3](https://github.com/user-attachments/assets/b375b3ca-3eba-462b-a971-b06f3d65c8cb)
+
+VPC
+![vpc](https://github.com/user-attachments/assets/edc24f99-baf9-43a3-81f8-b62f36386ab5)
+
