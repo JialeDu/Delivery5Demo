@@ -2,20 +2,32 @@ provider "aws" {
   region = "ca-central-1"
 }
 
+# ---------- Availability Zones ----------
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# ---------- Random ID (avoid name conflicts) ----------
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
 # ---------- VPC ----------
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
 
 resource "aws_subnet" "public" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
+  availability_zone       = data.aws_availability_zones.available.names[0]
 }
 
 resource "aws_subnet" "private" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.2.0/24"
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
 }
 
 resource "aws_internet_gateway" "igw" {
@@ -37,14 +49,14 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# ---------- S3 Bucket ----------
+# ---------- S3 Bucket (random name) ----------
 resource "aws_s3_bucket" "dr_bucket" {
-  bucket = "group6-dr-demo-bucket"
+  bucket = "group6-dr-demo-bucket-${random_id.suffix.hex}"
 }
 
-# ---------- IAM Role ----------
+# ---------- IAM Role (random name) ----------
 resource "aws_iam_role" "ec2_role" {
-  name = "group6-ec2-role"
+  name = "group6-ec2-role-${random_id.suffix.hex}"
 
   assume_role_policy = <<EOF
 {
@@ -62,6 +74,7 @@ resource "aws_iam_role" "ec2_role" {
 EOF
 }
 
+# Allow EC2 full S3 access (demo purpose)
 resource "aws_iam_role_policy" "ec2_s3_policy" {
   role = aws_iam_role.ec2_role.id
 
@@ -80,12 +93,13 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "group6-ec2-profile-${random_id.suffix.hex}"
   role = aws_iam_role.ec2_role.name
 }
 
-# ---------- Security Group ----------
+# ---------- Security Groups ----------
 resource "aws_security_group" "frontend_sg" {
-  name   = "frontend-sg"
+  name   = "frontend-sg-${random_id.suffix.hex}"
   vpc_id = aws_vpc.main.id
 
   ingress {
@@ -104,7 +118,7 @@ resource "aws_security_group" "frontend_sg" {
 }
 
 resource "aws_security_group" "backend_sg" {
-  name   = "backend-sg"
+  name   = "backend-sg-${random_id.suffix.hex}"
   vpc_id = aws_vpc.main.id
 
   ingress {
@@ -124,27 +138,27 @@ resource "aws_security_group" "backend_sg" {
 
 # ---------- EC2 Instances ----------
 resource "aws_instance" "frontend" {
-  ami                         = "ami-09e7fb5d565f22127"
-  instance_type               = "t2.micro"
-  subnet_id                   = aws_subnet.public.id
-  vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
-  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
-  user_data                   = file("userdata-frontend.sh")
+  ami                    = "ami-09e7fb5d565f22127"
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.frontend_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = file("userdata-frontend.sh")
 
   tags = {
-    Name = "frontend-ec2"
+    Name = "frontend-ec2-${random_id.suffix.hex}"
   }
 }
 
 resource "aws_instance" "backend" {
-  ami                         = "ami-09e7fb5d565f22127"
-  instance_type               = "t2.micro"
-  subnet_id                   = aws_subnet.private.id
-  vpc_security_group_ids      = [aws_security_group.backend_sg.id]
-  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
-  user_data                   = file("userdata-backend.sh")
+  ami                    = "ami-09e7fb5d565f22127"
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.private.id
+  vpc_security_group_ids = [aws_security_group.backend_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = file("userdata-backend.sh")
 
   tags = {
-    Name = "backend-ec2"
+    Name = "backend-ec2-${random_id.suffix.hex}"
   }
 }
